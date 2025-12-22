@@ -4,7 +4,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	// "github.com/google/uuid"
+	"github.com/google/uuid"
 
 	"github.com/HCMUT-LostFound/backend/internal/httpserver/dto"
 	"github.com/HCMUT-LostFound/backend/internal/httpserver/mapper"
@@ -84,4 +84,39 @@ func (h *ItemHandler) ListPublic(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, res)
+}
+
+func (h *ItemHandler) ListMine(c *gin.Context) {
+	user := c.MustGet("user").(*repository.User)
+
+	items, err := h.repo.ListByUser(c.Request.Context(), user.ID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	res := make([]dto.ItemResponse, 0, len(items))
+	for _, item := range items {
+		res = append(res, mapper.ToItemResponse(item))
+	}
+
+	c.JSON(http.StatusOK, res)
+}
+
+func (h *ItemHandler) Confirm(c *gin.Context) {
+	user := c.MustGet("user").(*repository.User)
+
+	itemIDParam := c.Param("id")
+	itemID, err := uuid.Parse(itemIDParam)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid item id"})
+		return
+	}
+
+	if err := h.repo.Confirm(c.Request.Context(), itemID, user.ID); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"status": "confirmed"})
 }

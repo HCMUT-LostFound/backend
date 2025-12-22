@@ -24,5 +24,7 @@ func RegisterRoutes(
 	protected.GET("/me", deps.UserHandler.GetMe)
 	protected.GET("/profile", deps.ProfileHandler.GetProfile)
 	protected.POST("/items", deps.ItemHandler.Create)
+	protected.GET("/items/me", deps.ItemHandler.ListMine)
+	protected.POST("/items/:id/confirm", deps.ItemHandler.Confirm)
 	// protected.GET("/items", deps.ItemHandler.ListPublic)
 }
