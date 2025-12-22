@@ -27,25 +27,37 @@ func main() {
 
 	r := gin.New()
 	r.Use(gin.Logger(), gin.Recovery())
+
 	verifier, err := auth.NewClerkVerifier(
-	os.Getenv("CLERK_JWKS_URL"),
-	os.Getenv("CLERK_ISSUER"),
+		os.Getenv("CLERK_JWKS_URL"),
+		os.Getenv("CLERK_ISSUER"),
 	)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	userRepo := repository.NewUserRepository(database)
+	itemRepo := repository.NewItemRepository(database)
 
+	userHandler := handler.NewUserHandler()
+	profileHandler := handler.NewProfileHandler()
+	itemHandler := handler.NewItemHandler(itemRepo)
+
+	// ===== PUBLIC API GROUP =====
+	public := r.Group("/api")
+
+	// ===== PROTECTED API GROUP =====
 	protected := r.Group("/api")
 	protected.Use(middleware.ClerkAuth(verifier, userRepo))
-	userHandler := handler.NewUserHandler()
 
 	httpserver.RegisterRoutes(
 		r,
+		public,
 		protected,
 		&httpserver.Dependencies{
-			UserHandler: userHandler,
+			UserHandler:    userHandler,
+			ProfileHandler: profileHandler,
+			ItemHandler:    itemHandler,
 		},
 	)
 

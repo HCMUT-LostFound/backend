@@ -1,10 +1,10 @@
 package middleware
 
 import (
+	"log"
 	"os"
 	"strings"
 	"net/http"
-
 	"github.com/gin-gonic/gin"
 
 	"github.com/HCMUT-LostFound/backend/internal/auth"
@@ -25,6 +25,7 @@ func ClerkAuth(
 
 		_, claims, err := verifier.Verify(tokenString)
 		if err != nil {
+			log.Println("[AUTH] verify error:", err.Error())
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "invalid token"})
 			return
 		}

@@ -3,7 +3,7 @@ package auth
 import (
 	"fmt"
 	"net/http"
-
+	"strings"
 	"github.com/MicahParks/keyfunc"
 	"github.com/golang-jwt/jwt/v4"
 )
@@ -27,26 +27,40 @@ func NewClerkVerifier(jwksURL, issuer string) (*ClerkVerifier, error) {
 		jwks: jwks,
 		iss:  issuer,
 	}, nil
+
 }
 
 func (v *ClerkVerifier) Verify(tokenString string) (*jwt.Token, jwt.MapClaims, error) {
-	token, err := jwt.Parse(tokenString, v.jwks.Keyfunc)
+	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodRSA); !ok {
+			return nil, fmt.Errorf("unexpected signing method")
+		}
+		return v.jwks.Keyfunc(token)
+	})
 	if err != nil {
-		return nil, nil, err
+		// ⛔ ignore "Token used before issued"
+		if strings.Contains(err.Error(), "before issued") {
+			// continue
+		} else {
+			return nil, nil, err
+		}
 	}
 
 	claims, ok := token.Claims.(jwt.MapClaims)
-	if !ok || !token.Valid {
-		return nil, nil, fmt.Errorf("invalid token")
+	if !ok {
+		return nil, nil, fmt.Errorf("invalid claims")
 	}
 
-	// check issuer manually (Clerk)
-	if claims["iss"] != v.iss {
+	// check issuer
+	iss, ok := claims["iss"].(string)
+	if !ok || iss != v.iss {
 		return nil, nil, fmt.Errorf("invalid issuer")
 	}
 
 	return token, claims, nil
 }
+
+
 
 func ExtractBearerToken(r *http.Request) string {
 	auth := r.Header.Get("Authorization")

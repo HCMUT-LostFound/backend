@@ -1,55 +1,30 @@
--- enable uuid
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
-
--- users (Clerk)
-CREATE TABLE users (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  clerk_user_id TEXT UNIQUE NOT NULL,
-  full_name TEXT,
-  avatar_url TEXT,
-  created_at TIMESTAMP DEFAULT now()
-);
-
--- campuses
-CREATE TABLE campuses (
-  id SERIAL PRIMARY KEY,
-  name TEXT NOT NULL
-);
-
--- items
 CREATE TABLE items (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 
-  type TEXT CHECK (type IN ('lost', 'found')) NOT NULL,
-  name TEXT NOT NULL,
+  user_id UUID NOT NULL
+    REFERENCES users(id)
+    ON DELETE CASCADE,
+
+  type TEXT NOT NULL
+    CHECK (type IN ('lost', 'found')),
+
+  title TEXT NOT NULL,
   description TEXT,
 
-  last_seen_location TEXT,
-  campus_id INT REFERENCES campuses(id),
+  image_urls TEXT[],
 
-  lost_at TIMESTAMP NOT NULL,
-  confirmed BOOLEAN DEFAULT false,
+  location TEXT NOT NULL,
+  campus TEXT NOT NULL,
 
-  created_at TIMESTAMP DEFAULT now()
+  lost_at TIMESTAMPTZ,
+
+  tags TEXT[],
+
+  is_confirmed BOOLEAN NOT NULL DEFAULT FALSE,
+
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
--- item images
-CREATE TABLE item_images (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  item_id UUID REFERENCES items(id) ON DELETE CASCADE,
-  image_url TEXT NOT NULL
-);
-
--- tags
-CREATE TABLE tags (
-  id SERIAL PRIMARY KEY,
-  name TEXT UNIQUE NOT NULL
-);
-
--- item_tags
-CREATE TABLE item_tags (
-  item_id UUID REFERENCES items(id) ON DELETE CASCADE,
-  tag_id INT REFERENCES tags(id) ON DELETE CASCADE,
-  PRIMARY KEY (item_id, tag_id)
-);
+CREATE INDEX idx_items_user_id ON items(user_id);
+CREATE INDEX idx_items_type ON items(type);
+CREATE INDEX idx_items_is_confirmed ON items(is_confirmed);
