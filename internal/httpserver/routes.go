@@ -8,6 +8,7 @@ type Dependencies struct {
 	UserHandler *handler.UserHandler
 	ProfileHandler *handler.ProfileHandler
 	ItemHandler *handler.ItemHandler
+	ChatHandler *handler.ChatHandler
 }
 func RegisterRoutes(
 	r *gin.Engine,
@@ -27,4 +28,10 @@ func RegisterRoutes(
 	protected.GET("/items/me", deps.ItemHandler.ListMine)
 	protected.POST("/items/:id/confirm", deps.ItemHandler.Confirm)
 	// protected.GET("/items", deps.ItemHandler.ListPublic)
+	
+	// Chat endpoints
+	protected.POST("/chats", deps.ChatHandler.CreateOrGet)
+	protected.GET("/chats", deps.ChatHandler.List)
+	protected.GET("/chats/:id/messages", deps.ChatHandler.GetMessages)
+	protected.POST("/chats/:id/messages", deps.ChatHandler.SendMessage)
 }

@@ -6,7 +6,7 @@ import (
 )
 
 func ToItemResponse(item repository.Item) dto.ItemResponse {
-	return dto.ItemResponse{
+	res := dto.ItemResponse{
 		ID:          item.ID,
 		UserID:      item.UserID,
 		Type:        item.Type,
@@ -19,4 +19,15 @@ func ToItemResponse(item repository.Item) dto.ItemResponse {
 		Tags:        item.Tags,
 		CreatedAt:   item.CreatedAt,
 	}
+
+	// Map user if available
+	if item.User != nil {
+		res.User = &dto.UserResponse{
+			ID:        item.User.ID,
+			FullName:  item.User.FullName,
+			AvatarURL: item.User.AvatarURL,
+		}
+	}
+
+	return res
 }

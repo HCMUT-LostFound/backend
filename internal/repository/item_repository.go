@@ -2,6 +2,8 @@ package repository
 
 import (
 	"context"
+	"database/sql"
+	"time"
 	"github.com/lib/pq"
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
@@ -45,17 +47,80 @@ func (r *ItemRepository) Create(ctx context.Context, item *Item) error {
 
 
 func (r *ItemRepository) ListPublic(ctx context.Context) ([]Item, error) {
-	var items []Item
+	type ItemRow struct {
+		ID          uuid.UUID      `db:"id"`
+		UserID      uuid.UUID      `db:"user_id"`
+		Type        string         `db:"type"`
+		Title       string         `db:"title"`
+		Description sql.NullString `db:"description"`
+		ImageURLs   pq.StringArray `db:"image_urls"`
+		Location    string         `db:"location"`
+		Campus      string         `db:"campus"`
+		LostAt      sql.NullTime   `db:"lost_at"`
+		Tags        pq.StringArray `db:"tags"`
+		IsConfirmed bool           `db:"is_confirmed"`
+		CreatedAt   time.Time      `db:"created_at"`
+		// User fields
+		UserIDFromUser uuid.UUID `db:"user_id_from_user"`
+		UserFullName   string    `db:"user_full_name"`
+		UserAvatarURL  string    `db:"user_avatar_url"`
+	}
+
+	var rows []ItemRow
 
 	query := `
-	SELECT *
-	FROM items
-	WHERE is_confirmed = FALSE
-	ORDER BY created_at DESC
+	SELECT 
+		i.id, i.user_id, i.type, i.title, i.description,
+		i.image_urls, i.location, i.campus, i.lost_at,
+		i.tags, i.is_confirmed, i.created_at,
+		u.id as user_id_from_user,
+		u.full_name as user_full_name,
+		u.avatar_url as user_avatar_url
+	FROM items i
+	INNER JOIN users u ON i.user_id = u.id
+	WHERE i.is_confirmed = FALSE
+	ORDER BY i.created_at DESC
 	`
 
-	err := r.db.SelectContext(ctx, &items, query)
-	return items, err
+	err := r.db.SelectContext(ctx, &rows, query)
+	if err != nil {
+		return nil, err
+	}
+
+	// Convert to Item with User
+	items := make([]Item, len(rows))
+	for i, row := range rows {
+		items[i] = Item{
+			ID:          row.ID,
+			UserID:      row.UserID,
+			Type:        row.Type,
+			Title:       row.Title,
+			ImageURLs:   row.ImageURLs,
+			Location:    row.Location,
+			Campus:      row.Campus,
+			Tags:        row.Tags,
+			IsConfirmed: row.IsConfirmed,
+			CreatedAt:   row.CreatedAt,
+		}
+		
+		if row.Description.Valid {
+			items[i].Description = &row.Description.String
+		}
+		if row.LostAt.Valid {
+			items[i].LostAt = &row.LostAt.Time
+		}
+		
+		// Add user info
+		if row.UserFullName != "" {
+			items[i].User = &User{
+				ID:        row.UserIDFromUser,
+				FullName:  row.UserFullName,
+				AvatarURL: row.UserAvatarURL,
+			}
+		}
+	}
+
+	return items, nil
 }
 
 func (r *ItemRepository) ListByUser(ctx context.Context, userID uuid.UUID) ([]Item, error) {

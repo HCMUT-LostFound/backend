@@ -24,4 +24,7 @@ type ItemResponse struct {
 	Tags        []string   `json:"tags"`
 
 	CreatedAt   time.Time  `json:"createdAt"`
+
+	// User who created the item
+	User        *UserResponse `json:"user,omitempty"`
 }
