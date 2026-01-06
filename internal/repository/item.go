@@ -8,7 +8,7 @@ import (
 
 type Item struct {
 	ID          uuid.UUID `db:"id"`
-	UserID      uuid.UUID `db:"user_id"`
+	UserID string `db:"user_id"`
 
 	Type        string    `db:"type"` // lost | found
 	Title       string    `db:"title"`

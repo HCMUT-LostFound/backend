@@ -6,10 +6,15 @@ import (
 	"github.com/google/uuid"
 )
 
+type Reporter struct {
+	ID       string `json:"id"`
+	FullName string `json:"fullName"`
+	ImageURL string `json:"imageUrl,omitempty"`
+}
+
 type ItemResponse struct {
 	ID          uuid.UUID  `json:"id"`
-	UserID      uuid.UUID  `json:"userId"`
-
+	UserID string `json:"userId"`
 	Type        string     `json:"type"`
 	Title       string     `json:"title"`
 	Description *string    `json:"description"`
@@ -22,6 +27,7 @@ type ItemResponse struct {
 	LostAt      *time.Time `json:"lostAt"`
 
 	Tags        []string   `json:"tags"`
-
+	Reporter *Reporter `json:"reporter,omitempty"`
+	IsConfirmed bool `json:"isConfirmed"`
 	CreatedAt   time.Time  `json:"createdAt"`
 }

@@ -5,7 +5,7 @@ services:
     image: postgres:16
     container_name: lostfound-postgres
     environment:
-      POSTGRES_DB: lostfound
+      POSTGRES_DB: lostfound_app
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
     ports:

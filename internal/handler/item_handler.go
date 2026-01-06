@@ -5,10 +5,12 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-
+	"os"
+	"fmt"
 	"github.com/HCMUT-LostFound/backend/internal/httpserver/dto"
 	"github.com/HCMUT-LostFound/backend/internal/httpserver/mapper"
 	"github.com/HCMUT-LostFound/backend/internal/repository"
+	"github.com/HCMUT-LostFound/backend/internal/auth"
 )
 
 type ItemHandler struct {
@@ -49,10 +51,11 @@ func (h *ItemHandler) Create(c *gin.Context) {
 		return
 	}
 
-	user := c.MustGet("user").(*repository.User)
+	// user := c.MustGet("user").(*repository.User)
+	clerkID := c.MustGet("clerk_user_id").(string)
 
 	item := &repository.Item{
-		UserID:    user.ID,
+		UserID:    clerkID,
 		Type:      req.Type,
 		Title:     req.Title,
 		Description: req.Description,
@@ -78,18 +81,29 @@ func (h *ItemHandler) ListPublic(c *gin.Context) {
 		return
 	}
 
+	secret := os.Getenv("CLERK_SECRET_KEY")
+
 	res := make([]dto.ItemResponse, 0, len(items))
+
 	for _, item := range items {
-		res = append(res, mapper.ToItemResponse(item))
+		user, err := auth.FetchClerkUser(item.UserID, secret)
+		if err != nil {
+			fmt.Println("CLERK FETCH ERROR:", err)
+			user = &auth.ClerkUser{FirstName: "Ẩn", LastName: "danh"}
+		}
+
+		res = append(res, mapper.ToItemResponseWithReporter(&item, user))
 	}
 
 	c.JSON(http.StatusOK, res)
 }
 
-func (h *ItemHandler) ListMine(c *gin.Context) {
-	user := c.MustGet("user").(*repository.User)
 
-	items, err := h.repo.ListByUser(c.Request.Context(), user.ID)
+
+func (h *ItemHandler) ListMine(c *gin.Context) {
+	clerkID := c.MustGet("clerk_user_id").(string)
+
+	items, err := h.repo.ListByUser(c.Request.Context(), clerkID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -104,7 +118,7 @@ func (h *ItemHandler) ListMine(c *gin.Context) {
 }
 
 func (h *ItemHandler) Confirm(c *gin.Context) {
-	user := c.MustGet("user").(*repository.User)
+	clerkID := c.MustGet("clerk_user_id").(string)
 
 	itemIDParam := c.Param("id")
 	itemID, err := uuid.Parse(itemIDParam)
@@ -113,7 +127,7 @@ func (h *ItemHandler) Confirm(c *gin.Context) {
 		return
 	}
 
-	if err := h.repo.Confirm(c.Request.Context(), itemID, user.ID); err != nil {
+	if err := h.repo.Confirm(c.Request.Context(), itemID, clerkID); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}

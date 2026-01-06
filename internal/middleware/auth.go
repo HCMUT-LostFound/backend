@@ -57,6 +57,7 @@ func ClerkAuth(
 		user, _ = userRepo.GetByClerkID(clerkID)
 
 		c.Set("user", user)
+		c.Set("clerk_user_id", clerkID)
 		c.Next()
 	}
 }

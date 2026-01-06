@@ -58,7 +58,7 @@ func (r *ItemRepository) ListPublic(ctx context.Context) ([]Item, error) {
 	return items, err
 }
 
-func (r *ItemRepository) ListByUser(ctx context.Context, userID uuid.UUID) ([]Item, error) {
+func (r *ItemRepository) ListByUser(ctx context.Context, clerkUserID string) ([]Item, error) {
 	var items []Item
 
 	query := `
@@ -69,11 +69,11 @@ func (r *ItemRepository) ListByUser(ctx context.Context, userID uuid.UUID) ([]It
 	ORDER BY created_at DESC
 	`
 
-	err := r.db.SelectContext(ctx, &items, query, userID)
+	err := r.db.SelectContext(ctx, &items, query, clerkUserID)
 	return items, err
 }
 
-func (r *ItemRepository) Confirm(ctx context.Context, itemID uuid.UUID, userID uuid.UUID) error {
+func (r *ItemRepository) Confirm(ctx context.Context, itemID uuid.UUID, clerkUserID string) error {
 	query := `
 	UPDATE items
 	SET is_confirmed = TRUE
@@ -81,6 +81,6 @@ func (r *ItemRepository) Confirm(ctx context.Context, itemID uuid.UUID, userID u
 	  AND user_id = $2
 	`
 
-	_, err := r.db.ExecContext(ctx, query, itemID, userID)
+	_, err := r.db.ExecContext(ctx, query, itemID, clerkUserID)
 	return err
 }

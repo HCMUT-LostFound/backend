@@ -2,6 +2,8 @@ package auth
 
 import (
 	"fmt"
+	"encoding/json"
+	"os"
 	"net/http"
 	"strings"
 	"github.com/MicahParks/keyfunc"
@@ -68,4 +70,26 @@ func ExtractBearerToken(r *http.Request) string {
 		return auth[7:]
 	}
 	return ""
+}
+
+func GetClerkUser(userID string) (*ClerkUser, error) {
+	req, _ := http.NewRequest("GET", "https://api.clerk.com/v1/users/"+userID, nil)
+	req.Header.Set("Authorization", "Bearer "+os.Getenv("CLERK_SECRET_KEY"))
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("clerk api error: %s", resp.Status)
+	}
+
+	var user ClerkUser
+	if err := json.NewDecoder(resp.Body).Decode(&user); err != nil {
+		return nil, err
+	}
+
+	return &user, nil
 }
