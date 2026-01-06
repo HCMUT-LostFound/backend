@@ -46,7 +46,7 @@ func ClerkAuth(
 			fullName := strings.TrimSpace(
 				clerkUser.FirstName + " " + clerkUser.LastName,
 			)
-
+			// email := clerkUser.PrimaryEmail()
 			_ = userRepo.UpsertProfile(
 				clerkID,
 				fullName,

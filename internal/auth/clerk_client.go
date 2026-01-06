@@ -11,6 +11,20 @@ type ClerkUser struct {
 	FirstName string `json:"first_name"`
 	LastName  string `json:"last_name"`
 	ImageURL  string `json:"image_url"`
+	PrimaryEmailAddressID  string `json:"primary_email_address_id"`
+	EmailAddresses []struct {
+		ID           string `json:"id"`
+		EmailAddress string `json:"email_address"`
+	} `json:"email_addresses"`
+}
+
+func (u *ClerkUser) PrimaryEmail() string {
+	for _, e := range u.EmailAddresses {
+		if e.ID == u.PrimaryEmailAddressID {
+			return e.EmailAddress
+		}
+	}
+	return ""
 }
 
 func FetchClerkUser(clerkUserID, secretKey string) (*ClerkUser, error) {

@@ -49,7 +49,7 @@ func main() {
 	// ===== PROTECTED API GROUP =====
 	protected := r.Group("/api")
 	protected.Use(middleware.ClerkAuth(verifier, userRepo))
-
+	protected.Use(middleware.DomainGuard())
 	httpserver.RegisterRoutes(
 		r,
 		public,
