@@ -2,7 +2,6 @@ package main
 
 import (
 	"log"
-	"net/http"
 	"os"
 	"time"
 	"github.com/joho/godotenv"
@@ -19,7 +18,7 @@ import (
 
 var router *gin.Engine
 
-func init() {
+func initRouter() {
 	_ = godotenv.Load()
 	cfg := config.Load()
 	database := db.NewPostgres(cfg.DBUrl)
@@ -93,7 +92,7 @@ func init() {
 
 func main() {
 	if router == nil {
-		init()
+		initRouter()
 	}
 
 	port := os.Getenv("PORT")
