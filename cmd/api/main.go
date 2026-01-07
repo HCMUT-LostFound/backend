@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"os"
+	"strings"
 	"time"
 	"github.com/joho/godotenv"
 	"github.com/gin-gonic/gin"
@@ -41,17 +42,40 @@ func initRouter() {
 	}
 
 	if prodOrigins := os.Getenv("CORS_ALLOWED_ORIGINS"); prodOrigins != "" {
-		allowedOrigins = append(allowedOrigins, prodOrigins)
+		// Split by comma if multiple origins
+		origins := strings.Split(prodOrigins, ",")
+		for _, origin := range origins {
+			origin = strings.TrimSpace(origin)
+			if origin != "" {
+				allowedOrigins = append(allowedOrigins, origin)
+			}
+		}
 	}
 
-	router.Use(cors.New(cors.Config{
-		AllowOrigins:     allowedOrigins,
+	// For mobile apps (React Native/Expo), allow all origins
+	// Mobile apps don't have a specific origin, so we need to allow all
+	allowAllOrigins := os.Getenv("ALLOW_ALL_ORIGINS") == "true"
+	
+	corsConfig := cors.Config{
 		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Content-Length", "Content-Type", "Authorization"},
 		ExposeHeaders:    []string{"Content-Length"},
 		AllowCredentials: true,
 		MaxAge:           12 * time.Hour,
-	}))
+	}
+
+	if allowAllOrigins {
+		// Allow all origins for mobile apps
+		corsConfig.AllowOriginFunc = func(origin string) bool {
+			return true
+		}
+		log.Println("[CORS] Allowing all origins (mobile app mode)")
+	} else {
+		corsConfig.AllowOrigins = allowedOrigins
+		log.Printf("[CORS] Allowing specific origins: %v", allowedOrigins)
+	}
+
+	router.Use(cors.New(corsConfig))
 
 	verifier, err := auth.NewClerkVerifier(
 		os.Getenv("CLERK_JWKS_URL"),
