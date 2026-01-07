@@ -59,7 +59,9 @@ func init() {
 		os.Getenv("CLERK_ISSUER"),
 	)
 	if err != nil {
-		log.Fatal(err)
+		log.Printf("Warning: Failed to create Clerk verifier: %v", err)
+		// Don't fatal - will be handled at request time
+		return
 	}
 
 	userRepo := repository.NewUserRepository(database)
@@ -89,15 +91,6 @@ func init() {
 	)
 }
 
-// Handler cho Vercel
-func Handler(w http.ResponseWriter, r *http.Request) {
-	if router == nil {
-		init()
-	}
-	router.ServeHTTP(w, r)
-}
-
-// Main cho local development
 func main() {
 	if router == nil {
 		init()
