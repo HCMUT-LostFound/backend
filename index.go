@@ -1,4 +1,4 @@
-package main
+package handler
 
 import (
 	"log"
@@ -14,12 +14,12 @@ import (
 	"github.com/HCMUT-LostFound/backend/internal/auth"
 	"github.com/HCMUT-LostFound/backend/internal/repository"
 	"github.com/HCMUT-LostFound/backend/internal/middleware"
-	"github.com/HCMUT-LostFound/backend/internal/handler"
+	apphandler "github.com/HCMUT-LostFound/backend/internal/handler"
 )
 
 var router *gin.Engine
 
-func init() {
+func initRouter() {
 	_ = godotenv.Load()
 	cfg := config.Load()
 	database := db.NewPostgres(cfg.DBUrl)
@@ -59,7 +59,9 @@ func init() {
 		os.Getenv("CLERK_ISSUER"),
 	)
 	if err != nil {
-		log.Fatal(err)
+		log.Printf("Warning: Failed to create Clerk verifier: %v", err)
+		// Don't fatal in serverless - will be handled at request time
+		return
 	}
 
 	userRepo := repository.NewUserRepository(database)
@@ -67,10 +69,10 @@ func init() {
 	chatRepo := repository.NewChatRepository(database)
 	chatMessageRepo := repository.NewChatMessageRepository(database)
 
-	userHandler := handler.NewUserHandler()
-	profileHandler := handler.NewProfileHandler()
-	itemHandler := handler.NewItemHandler(itemRepo)
-	chatHandler := handler.NewChatHandler(chatRepo, chatMessageRepo)
+	userHandler := apphandler.NewUserHandler()
+	profileHandler := apphandler.NewProfileHandler()
+	itemHandler := apphandler.NewItemHandler(itemRepo)
+	chatHandler := apphandler.NewChatHandler(chatRepo, chatMessageRepo)
 
 	public := router.Group("/api")
 	protected := router.Group("/api")
@@ -89,27 +91,15 @@ func init() {
 	)
 }
 
-// Handler cho Vercel
+func init() {
+	initRouter()
+}
+
+// Handler is the entry point for Vercel serverless function
 func Handler(w http.ResponseWriter, r *http.Request) {
 	if router == nil {
-		init()
+		initRouter()
 	}
 	router.ServeHTTP(w, r)
 }
 
-// Main cho local development
-func main() {
-	if router == nil {
-		init()
-	}
-
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "8080"
-	}
-
-	log.Printf("API listening on :%s", port)
-	if err := router.Run(":" + port); err != nil {
-		log.Fatal(err)
-	}
-}
