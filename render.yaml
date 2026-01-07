@@ -2,7 +2,7 @@ services:
   - type: web
     name: lostfound-api
     env: go
-    buildCommand: go build -o server ./cmd/api
+    buildCommand: go mod tidy && go build -o server ./cmd/api
     startCommand: ./server
     envVars:
       - key: GIN_MODE
