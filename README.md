@@ -18,3 +18,20 @@ Dự án cung cấp các RESTful API để:
 - SQL Migrations
 
 ---
+## ▶️ Chạy dự án
+
+### 1️⃣ Chạy PostgreSQL bằng Docker
+
+    docker compose up -d
+
+### 2️⃣ Cài dependencies
+
+    go mod tidy
+
+### 3️⃣ Chạy migration
+
+    migrate -path ./migrations -database "postgres://postgres:postgres@localhost:5432/lostfound?sslmode=disable" up
+
+### 4️⃣ Chạy server
+
+    go run cmd/api/main.go
