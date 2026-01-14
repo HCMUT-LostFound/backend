@@ -124,18 +124,64 @@ func (r *ItemRepository) ListPublic(ctx context.Context) ([]Item, error) {
 }
 
 func (r *ItemRepository) ListByUser(ctx context.Context, userID uuid.UUID) ([]Item, error) {
-	var items []Item
+	type ItemRow struct {
+		ID          uuid.UUID      `db:"id"`
+		UserID      uuid.UUID      `db:"user_id"`
+		Type        string         `db:"type"`
+		Title       string         `db:"title"`
+		Description sql.NullString `db:"description"`
+		ImageURLs   pq.StringArray `db:"image_urls"`
+		Location    string         `db:"location"`
+		Campus      string         `db:"campus"`
+		LostAt      sql.NullTime   `db:"lost_at"`
+		Tags        pq.StringArray `db:"tags"`
+		IsConfirmed bool           `db:"is_confirmed"`
+		CreatedAt   time.Time      `db:"created_at"`
+	}
+
+	var rows []ItemRow
 
 	query := `
-	SELECT *
+	SELECT 
+		id, user_id, type, title, description,
+		image_urls, location, campus, lost_at,
+		tags, is_confirmed, created_at
 	FROM items
 	WHERE user_id = $1
 	  AND is_confirmed = FALSE
 	ORDER BY created_at DESC
 	`
 
-	err := r.db.SelectContext(ctx, &items, query, userID)
-	return items, err
+	err := r.db.SelectContext(ctx, &rows, query, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Convert to Item
+	items := make([]Item, len(rows))
+	for i, row := range rows {
+		items[i] = Item{
+			ID:          row.ID,
+			UserID:      row.UserID,
+			Type:        row.Type,
+			Title:       row.Title,
+			ImageURLs:   []string(row.ImageURLs),
+			Location:    row.Location,
+			Campus:      row.Campus,
+			Tags:        []string(row.Tags),
+			IsConfirmed: row.IsConfirmed,
+			CreatedAt:   row.CreatedAt,
+		}
+
+		if row.Description.Valid {
+			items[i].Description = &row.Description.String
+		}
+		if row.LostAt.Valid {
+			items[i].LostAt = &row.LostAt.Time
+		}
+	}
+
+	return items, nil
 }
 
 func (r *ItemRepository) Confirm(ctx context.Context, itemID uuid.UUID, userID uuid.UUID) error {
