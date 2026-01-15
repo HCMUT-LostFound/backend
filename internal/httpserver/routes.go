@@ -23,6 +23,9 @@ func RegisterRoutes(
 	r.GET("/health", func(c *gin.Context) {
 		c.JSON(200, gin.H{"status": "ok", "message": "Hello World"})
 	})
+	
+	// Swagger UI at /swagger/index.html
+	// Will be registered in main.go
 	public.GET("/items", deps.ItemHandler.ListPublic)
 	// protected
 	protected.GET("/me", deps.UserHandler.GetMe)

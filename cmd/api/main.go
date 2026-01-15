@@ -8,6 +8,8 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/gin-gonic/gin"
 	"github.com/gin-contrib/cors"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 	"github.com/HCMUT-LostFound/backend/internal/config"
 	"github.com/HCMUT-LostFound/backend/internal/db"
 	"github.com/HCMUT-LostFound/backend/internal/httpserver"
@@ -15,6 +17,7 @@ import (
 	"github.com/HCMUT-LostFound/backend/internal/repository"
 	"github.com/HCMUT-LostFound/backend/internal/middleware"
 	"github.com/HCMUT-LostFound/backend/internal/handler"
+	_ "github.com/HCMUT-LostFound/backend/docs"
 )
 
 var router *gin.Engine
@@ -112,6 +115,9 @@ func initRouter() {
 			ChatHandler:    chatHandler,
 		},
 	)
+
+	// Swagger UI - access at /swagger/index.html
+	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 }
 
 func main() {
