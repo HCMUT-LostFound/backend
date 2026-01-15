@@ -16,9 +16,12 @@ func RegisterRoutes(
 	protected *gin.RouterGroup,
 	deps *Dependencies,
 ) {
-	// public
+	// public - health check
+	r.GET("/", func(c *gin.Context) {
+		c.String(200, "Hello World - Server is running!")
+	})
 	r.GET("/health", func(c *gin.Context) {
-		c.JSON(200, gin.H{"status": "ok"})
+		c.JSON(200, gin.H{"status": "ok", "message": "Hello World"})
 	})
 	public.GET("/items", deps.ItemHandler.ListPublic)
 	// protected
